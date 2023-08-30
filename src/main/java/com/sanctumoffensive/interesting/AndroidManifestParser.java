@@ -1,17 +1,37 @@
 package com.sanctumoffensive.interesting;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.regex.MatchResult;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Interesting {
+public class AndroidManifestParser {
+    private final String androidManifestPath;
+    private final Set<String> permissions;
 
-    public static String getDescriptionByNamePermission(String permission) {
+    public AndroidManifestParser(String directoryAndroidManifest) {
+        this.androidManifestPath = String.format("%s/AndroidManifest.xml", directoryAndroidManifest);
+        this.permissions = new HashSet<>();
+    }
+
+    public void run() throws IOException {
+        String manifestString = Files.readString(Paths.get(this.androidManifestPath));
+
+        Pattern pattern = Pattern.compile("<uses-permission android:name=\"android.permission.(.*)\".*?");
+        Matcher matcher = pattern.matcher(manifestString);
+
+        while(matcher.find()) {
+            permissions.add(matcher.group(1));
+        }
+    }
+
+    public Set<String> getPermissionsName() {
+        return permissions;
+    }
+
+    public String getPermissionsDescriptionByName(String permissionName) {
         Map<String, String> permissions = new HashMap<>();
 
         permissions.put("ACCESS_CHECKIN_PROPERTIES"            , "Allows read/write access to the \"properties\" table in the checkin database, to change values that get uploaded.");
@@ -118,24 +138,6 @@ public class Interesting {
         permissions.put("READ_PHONE_STATE"                     , "Allows read only access to phone state.");
         permissions.put("READ_PROFILE"                         , "Allows an application to read the user\"s personal profile data.");
 
-        return permissions.get(permission);
-    }
-
-
-    public static void androidManifest(String directory) {
-        Pattern p = Pattern.compile("(?i)android:permission=\"android.permission.(.*?)\".*?");
-        Scanner sc = null;
-
-        try {
-            sc = new Scanner(new File(directory+"/AndroidManifest.xml"), StandardCharsets.UTF_8);
-
-            while (sc.findWithinHorizon(p, 0) != null)
-            {
-                MatchResult m = sc.match();
-                System.out.println(m.group(1));
-            }
-        }catch (IOException e) {
-            System.err.println("[!] "+ e.getMessage());
-        }
+        return permissions.get(permissionName);
     }
 }
